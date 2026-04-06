@@ -1,0 +1,17 @@
+[workspace]
+resolver = "2"
+members = [
+    "core",
+    "plugins/nvme",
+    "plugins/rdma",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "BSD-2-Clause-Patent"
+repository = "https://github.com/SiliconLanguage/m-store"
+description = "Monadic Store: Hardware-Software Co-Design for Zero-Kernel User-Space Storage Systems."
+
+[workspace.dependencies]
+# Add shared dependencies here as the project grows.

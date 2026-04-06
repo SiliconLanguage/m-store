@@ -1,0 +1,10 @@
+[package]
+name = "mstore-plugin-nvme"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "NVMe plugin: direct SPDK queue-pair bindings for m-store."
+
+[dependencies]
+mstore-core = { path = "../../core" }

@@ -1,0 +1,9 @@
+[package]
+name = "mstore-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "Core storage engine: zero-kernel user-space I/O path over SPDK NVMe queues."
+
+[dependencies]
