@@ -1,9 +1,9 @@
 [workspace]
 resolver = "2"
 members = [
-    "core",
-    "plugins/nvme",
-    "plugins/rdma",
+    "src/core/engine",
+    "src/core/nvme",
+    "src/core/rdma",
 ]
 
 [workspace.package]

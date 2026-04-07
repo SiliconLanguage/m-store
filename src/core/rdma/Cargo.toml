@@ -7,4 +7,4 @@ repository.workspace = true
 description = "RDMA plugin: zero-copy remote DMA transport for m-store."
 
 [dependencies]
-mstore-core = { path = "../../core" }
+mstore-core = { path = "../engine" }
