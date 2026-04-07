@@ -6,7 +6,7 @@ The physical constraints governing high-performance AI infrastructure have shift
 
 **`m-store`** is a zero-kernel, zero-copy storage engine built entirely in user space. Applying the "Monadic Paradigm," it treats the host CPU as a pure computational engine, isolating all state mutation and storage side-effects to out-of-band hardware. 
 
-Rather than forcing a rigid POSIX filesystem onto every workload, `m-store` operates as a foundational **Key-Array-Value** substrate. It exposes its zero-copy data plane through highly specialized, dynamically compiled plugins tailored for the exact bottlenecks of modern LLM inference and training.
+Rather than forcing a rigid POSIX filesystem onto every workload, `m-store` operates as a foundational **Key-Array-Value** substrate. It exposes its zero-copy data plane through highly specialized, dynamically compiled plugins tailored for the exact bottlenecks of modern LLM inference, training, and autonomous agentic workflows.
 
 ---
 
@@ -29,62 +29,17 @@ To saturate 400 Gbps network fabrics and PCIe Gen 5 buses, `m-store` routes spec
 *   **The Architecture:** `m-store` avoids the page cache entirely. It dynamically loads graph routing lists into device-side caches, returning only the exact requested vector payload to the host, enabling sub-millisecond retrieval latencies for RAG pipelines.
 
 ### 🔌 Plugin C: Tensor Array & MoE Weight Store
-*   **The Bottleneck:** Swapping massive expert parameters for Mixture of Experts (MoE) models or writing synchronous checkpoints stalls training clusters.
-*   **The Architecture:** Modeled after 3FS (which achieves up to 6.6 TiB/s read bandwidth), this plugin streams expert weights directly from distributed storage into GPU memory via RDMA, making checkpointing an asynchronous, lock-free operation.
+*   **The Bottleneck:** Swapping massive expert parameters for Mixture of Experts (MoE) models or writing synchronous checkpoints stalls training clusters. Fetching required experts via standard kernel I/O incurs latency spikes of ~10 milliseconds, crippling token generation.
+*   **The Architecture:** Modeled after 3FS (which achieves up to 6.6 TiB/s read bandwidth), this plugin streams expert weights directly from distributed storage into GPU memory via user-space DMA. This entirely bypasses the host CPU bounce buffers and eliminates PCIe bottleneck stalls, preserving interactive token generation latencies without sacrificing model accuracy.
+
+### 🔌 Plugin D: Agentic Episodic Memory (Engram Cache)
+*   **The Bottleneck:** As AI agents evolve into autonomous entities, they require persistent, sub-millisecond retrieval of specific past interactions (episodic memory). Forcing agents to store this state as unstructured markdown "Wikis" in a slow POSIX filesystem breaks the zero-kernel paradigm and hinders scalability.
+*   **The Architecture:** `m-store` natively manages the agentic memory spectrum by supporting **Engrams**—immutable, cryptographically verifiable traces of an agent's past reasoning chains and tool actions. By routing these event logs into high-speed `Ior` queues and vectorizing them on the fly, agents can rapidly perform semantic searches over an append-only log without overflowing their active LLM context window.
 
 ---
 
 ## ⚡ 3. The Compiler & Execution Engine (MLIR + eBPF)
 Allowing arbitrary code inside a storage engine is a security risk, but legacy SQL is too rigid for tensor mathematics. `m-store` implements a secure, **two-tiered execution model**:
 
-1.  **Frontend (MLIR Translation):** Users write declarative Python DSLs (similar to Triton or SGLang). The `m-store` compiler translates this Abstract Syntax Tree (AST) into a custom **MLIR (Multi-Level Intermediate Representation)** dialect, applying automatic memory coalescing and hardware-specific optimizations before lowering it to physical instructions.
-2.  **Backend (eBPF & Near-Storage Compute):** 
-    *   **In-Kernel XRP Hooks:** For operations that must execute on the host, `m-store` compiles the MLIR into eBPF bytecode. Utilizing the **XRP (eXpress Resubmission Path)** framework, this eBPF code runs safely inside the NVMe driver’s interrupt handler. It can chase pointers through a B-tree or evaluate vectors and immediately resubmit the next I/O request without ever waking up the user-space process—improving throughput by up to 2.5x.
-    *   **DPU/CSD Delegation:** Where available, `m-store` ships execution directly to out-of-band hardware. We utilize dual-layer compression on Computational Storage Drives (like Alibaba's PolarCSD) and offload AES-XTS encryption to the ARM cores of NVIDIA BlueField DPUs using the DOCA SNAP framework.
-
----
-## 📜 License
-`m-store` is released under the **BSD-2-Clause Plus Patent License**. This ensures explicit patent protection for our hardware-software co-design while maintaining full legal compatibility with GPLv2 for seamless integration into enterprise Linux environments.
-
-*Built for the post-Von Neumann era. The host CPU is a pure computational engine; all state, network, and storage side-effects are isolated to out-of-band hardware.*
-
-Directory Structure
-```
-m-store/
-├── core/                     # Rust storage engine (Plugin trait, I/O path)
-├── plugins/
-│   ├── nvme/                 # SPDK NVMe queue-pair plugin
-│   └── rdma/                 # ibverbs zero-copy RDMA plugin
-├── compiler/
-│   ├── mlir/dialects/        # MLIR dialect for storage ops (mstore.mlir)
-│   └── ebpf/hooks/           # eBPF I/O latency hooks (io_hook.bpf.c)
-├── vendor/spdk/              # SPDK submodule (lock-free NVMe queues)
-└── docs/                     # Architecture decision records
-```
-
-## Prerequisites
-
-| Tool | Minimum version |
-|------|----------------|
-| Rust / Cargo | 1.78 |
-| LLVM / MLIR | 18 |
-| libbpf | 1.3 |
-| SPDK | see `vendor/spdk` submodule |
-
-## Quick Start
-
-```bash
-# Clone with submodules
-git clone --recurse-submodules https://github.com/SiliconLanguage/m-store.git
-cd m-store
-
-# Build the Rust workspace
-cargo build
-
-# Bootstrap SPDK (run once)
-cd vendor/spdk && ./scripts/pkgdep.sh && ./configure && make -j$(nproc)
-```
-
-## License
-
-BSD-2-Clause-Patent — see [LICENSE](LICENSE).
+*   **Tier 1: In-Kernel / Near-Storage Compute (The XRP Pattern):** Leveraging frameworks like the eXpress Resubmission Path (XRP), `m-store` injects verified extended Berkeley Packet Filter (eBPF) functions directly into the NVMe driver's hardware interrupt completion handler. This permits the storage device to autonomously traverse complex B-trees, filter vectors, and chain physical logical block address (LBA) read requests without ever triggering a context switch or copying intermediate blocks to user space.
+*   **Tier 2: The MLIR / LLVM Compiler Continuum:** To support highly specialized AI data manipulations, `m-store` utilizes MLIR to translate high-level mathematical intent (e.g., Triton or StableHLO dialects) directly into optimized hardware execution paths. Driven by the overarching **Tensorplane** agentic control plane, the system can autonomously generate, sandbox, and atomically hot-swap C++ or WebAssembly storage kernels to adapt to specific workload bottlenecks at machine speed.
