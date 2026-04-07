@@ -1,6 +1,8 @@
 # 🗄️ m-store: Monadic Store Architecture
 **A Multi-Modal, Zero-Kernel Data Platform for Hyperscale AI**
 
+> 📖 **Read the Manifesto:** Discover the overarching "Monadic Taxonomy," our hardware-software co-design philosophy, and how `m-store` acts as the physical data plane for autonomous AI agents in the [SiliconLanguage Vision Document](https://github.com/SiliconLanguage/.github/blob/main/docs/vision.md).
+
 ## 📖 The Vision
 The physical constraints governing high-performance AI infrastructure have shifted irrevocably from the storage medium to the operating system's kernel stack. Modern NVMe SSDs deliver microsecond latencies, meaning the legacy Linux Virtual File System (VFS), POSIX compliance layers, and hardware interrupt handlers now account for a massive percentage of overall I/O latency. 
 
