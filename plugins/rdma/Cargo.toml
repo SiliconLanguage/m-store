@@ -1,0 +1,10 @@
+[package]
+name = "mstore-plugin-rdma"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+description = "RDMA plugin: zero-copy remote DMA transport for m-store."
+
+[dependencies]
+mstore-core = { path = "../../core" }
